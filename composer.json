@@ -1,0 +1,18 @@
+{
+    "name": "captive/oc-backup-plugin",
+    "type": "october-plugin",
+    "description": "Backup the mysql database of OctoberCMS",
+    "homepage": "https://github.com/Captive/oc-backup-plugin",
+    "keywords": ["october", "octobercms", "notes", "mysql backup"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Eric Yang",
+            "email": "ericy@captive.ca"
+        }
+    ],
+    "require": {
+        "composer/installers": "~1.0",
+        "nao-pon/flysystem-google-drive": "~1.1"
+    }
+}
