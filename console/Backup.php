@@ -65,7 +65,7 @@ class Backup extends Command
     {
         $date = Carbon::now();
         $date->setTimezone(Config::get('cms.backendTimezone'));
-        return $date->format('Y-m') . '/' . $date->format('Y.m.d-H.i') . '.db.sql.gz';
+        return $date->format('Y-m') . '/' . $date->format('Y-m-d_H-i-s') . '.db.sql.gz';
     }
 
     /**
@@ -155,7 +155,7 @@ class Backup extends Command
         }
 
         // Clean up the local backup file
-        shell_exec("rm $backupFile");
+        unlink($backupFile);
     }
 
     /**
@@ -167,10 +167,10 @@ class Backup extends Command
      * @param string $basePath Optional, defaults to the root
      * @return array
      * (
-     *     [name] => 2020.01.01-17.35.db.sql.gz
+     *     [name] => 2020-01-01_17-35-01.db.sql.gz
      *     [type] => file
      *     [path] => 1sC39HVAKUl-PvJbd2ojV/1yXPvJKUf4Ma0Psrj
-     *     [filename] => 2019.05.16-17.35.db.sql
+     *     [filename] => 2020-01-01_17-35-01.db.sql
      *     [extension] => gz
      *     [timestamp] => 1558049742
      *     [mimetype] => application/x-gzip
