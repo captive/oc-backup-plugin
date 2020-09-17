@@ -81,7 +81,7 @@ class Backup extends Command
         $dbPassword = $db['password'];
         $databaseName = $db['database'];
         // Dump the database contents
-        $command = "mysqldump --single-transaction --routines --triggers -P {$db['port']} -h {$db['host']} -u\"$dbUserName\" -p\"$dbPassword\" $databaseName";
+        $command = "mysqldump --no-tablespaces --single-transaction --routines --triggers -P {$db['port']} -h {$db['host']} -u\"$dbUserName\" -p\"$dbPassword\" $databaseName";
 
         // remove the "DEFINER:  /*!50013 DEFINER=`homestead`@`%` SQL SECURITY DEFINER */ -> /*!50013 */" string from generated views in the export
         // remove the DEFINER in the function, procedure. https://stackoverflow.com/questions/9446783/remove-definer-clause-from-mysql-dumps
