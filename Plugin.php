@@ -4,8 +4,9 @@ use Backend;
 use Storage;
 use Google_Client;
 use Google_Service_Drive;
+use Illuminate\Filesystem\FilesystemAdapter;
 use League\Flysystem\Filesystem;
-use Hypweb\Flysystem\GoogleDrive\GoogleDriveAdapter;
+use Masbug\Flysystem\GoogleDriveAdapter;
 
 use System\Classes\PluginBase;
 
@@ -50,14 +51,14 @@ class Plugin extends PluginBase
     {
         // Init Google Drive Storage, TODO: AWS S3
         Storage::extend('googledrive', function($app, $config) {
-            traceLog($config);
             $client = new Google_Client();
             $client->setClientId($config['clientId']);
             $client->setClientSecret($config['clientSecret']);
             $client->refreshToken($config['refreshToken']);
             $service = new Google_Service_Drive($client);
             $adapter = new GoogleDriveAdapter($service, $config['folderId']);
-            return new Filesystem($adapter);
+            $fileSystem =  new Filesystem($adapter);
+            return new FilesystemAdapter($fileSystem, $adapter);
         });
     }
 

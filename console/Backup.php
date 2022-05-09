@@ -121,37 +121,28 @@ class Backup extends Command
         list($path, $filename) = explode('/', $path);
 
         // Handle Google Drive storage disks
-        if ($disk->getDriver()->getAdapter() instanceof \Hypweb\Flysystem\GoogleDrive\GoogleDriveAdapter) {
-            // Attempt to get the folder ID we'll be using
-            $info = $this->getGDriveInfo($disk, $path);
-            if (empty($info)) {
-                $disk->makeDirectory($path);
-                sleep(1);
-                $info = $this->getGDriveInfo($disk, $path);
-            }
-
-            if (!empty($info)) {
-                $path = $info['path'];
-            } else {
+        if (! $disk->exists($path)) {
+            $disk->makeDirectory($path);
+            sleep(1);
+            if (! $disk->exists($path)) {
                 throw new ApplicationException("Backup failed, was unable to find or create $path on the backup drive");
             }
         }
 
+        $localAdapter = new \League\Flysystem\Local\LocalFilesystemAdapter('/');
+        $localfs = new \League\Flysystem\Filesystem($localAdapter, [\League\Flysystem\Config::OPTION_VISIBILITY => \League\Flysystem\Visibility::PRIVATE]);
         // Attempt to upload the file
-        $disk->put("$path/$filename", fopen($backupFile, 'r+'));
-
+        $disk->writeStream("$path/$filename", $localfs->readStream($backupFile), []);
         // Verify that the upload succeeded
         $localSize = filesize($backupFile);
-        $remoteSize = null;
-        if ($disk->getDriver()->getAdapter() instanceof \Hypweb\Flysystem\GoogleDrive\GoogleDriveAdapter) {
-            $file = $this->getGDriveInfo($disk, $filename, 'file', $path);
-        } else {
-            $file = $disk->get("$path/$filename");
-        }
 
-        if ($file) {
-            $remoteSize = $file['size'];
+        $remoteSize = 0;
+        try {
+            $remoteSize = $disk->size("$path/$filename");
+        }catch(Exception $e) {
+            throw new ApplicationException("Storing the backup file $path/$filename failed!");
         }
+        
 
         if ($localSize !== $remoteSize) {
             throw new ApplicationException("Storing the backup file $path/$filename failed, uploaded size is $remoteSize bytes expected $localSize bytes");
@@ -169,28 +160,54 @@ class Backup extends Command
      * @param string $type Optional, defaults to 'dir', other 'file'
      * @param string $basePath Optional, defaults to the root
      * @return array
+     * 
+     * dir
+     * 
      * (
-     *     [name] => 2020-01-01_17-35-01.db.sql.gz
-     *     [type] => file
-     *     [path] => 1sC39HVAKUl-PvJbd2ojV/1yXPvJKUf4Ma0Psrj
-     *     [filename] => 2020-01-01_17-35-01.db.sql
-     *     [extension] => gz
-     *     [timestamp] => 1558049742
-     *     [mimetype] => application/x-gzip
-     *     [size] => 215855
-     *     [dirname] => 1sC39HVAKUl-PvJbd2ojV
-     *     [basename] => 1yXPvJKUf4Ma0Psrj
-     * )
+     * [type:League\Flysystem\DirectoryAttributes:private] => dir
+     * [path:League\Flysystem\DirectoryAttributes:private] => 2022-05
+     * [visibility:League\Flysystem\DirectoryAttributes:private] => private
+     * [lastModified:League\Flysystem\DirectoryAttributes:private] => 1652126329
+     * [extraMetadata:League\Flysystem\DirectoryAttributes:private] => Array
+     *      (
+     *          [id] => path_id
+     *          [virtual_path] => path_id
+     *          [display_path] => 2022-05
+     *      )
+     *  )
+     * 
+     * file
+     * (
+     *      [type:League\Flysystem\FileAttributes:private] => file
+     *      [path:League\Flysystem\FileAttributes:private] => Folder/2022-05-09_21-18-17.db.sql.gz
+     *      [fileSize:League\Flysystem\FileAttributes:private] => 291887
+     *      [visibility:League\Flysystem\FileAttributes:private] => private
+     *      [lastModified:League\Flysystem\FileAttributes:private] => 1652131159
+     *      [mimeType:League\Flysystem\FileAttributes:private] => application/gzip
+     *      [extraMetadata:League\Flysystem\FileAttributes:private] => Array
+     *          (
+     *              [id] => file_id
+     *              [virtual_path] => /path_id/file_id
+     *              [display_path] => Folder/2022-05-09_21-18-17.db.sql.gz
+     *              [filename] => 2022-05-09_21-18-17.db.sql
+     *              [extension] => gz
+     *          )
+     *  )
+     * 
      */
     protected function getGDriveInfo($disk, $name, $type = 'dir', $basePath = '/')
     {
-        if (!($disk->getDriver()->getAdapter() instanceof \Hypweb\Flysystem\GoogleDrive\GoogleDriveAdapter)) {
-            throw new ApplicationException("The provided disk is not a Google Drive storage disk");
+        // if (!($disk->getDriver()->getAdapter() instanceof GoogleDriveAdapter)) {
+        //     throw new ApplicationException("The provided disk is not a Google Drive storage disk");
+        // }
+        $list = $disk->listContents($basePath, false);
+        foreach($list as $item) {
+            traceLog($item);
         }
 
         return collect($disk->listContents($basePath, false))
             ->where('type', '=', $type)
-            ->where('name', '=', $name)
+            ->where('path', '=', $name)
             ->sortBy('timestamp')
             ->last();
     }

@@ -34,3 +34,9 @@ BACKUP_GOOGLE_REFRESH_TOKEN=
 BACKUP_GOOGLE_FOLDER_ID=
 ```
 
+# 3.0 Updates
+## Configuration 
+BACKUP_GOOGLE_FOLDER_ID changed to folder name
+
+## Lib
+Using masbug/flysystem-google-drive-ext
